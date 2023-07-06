@@ -1,0 +1,21 @@
+# Author: Azuroso
+# Fix for relaying ipv6 in luci-proto-relay
+
+temp_save_folder="/tmp/tmp/ipv6_relay_subnets";
+
+#INTERFACE="wan6";
+#ACTION="iflink";
+
+function print_log(){
+    logger -t IPV6_Relay "$1";
+    echo $1;
+    echo "$1" >> /tmp/tmp/test_94-relay.log
+}
+
+
+
+if [[ "${INTERFACE}" == "wan6" ]] ; then
+
+    bash /etc/scripts/relayipv6_routes.sh 2>>/tmp/tmp/test_94-relay.log
+
+fi
