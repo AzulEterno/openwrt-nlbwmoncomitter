@@ -1,20 +1,33 @@
+# Created Date: Mo Jul 2023
 # Author: Azuroso
+# -----
+# Last Modified: Mon Jul 10 2023
+# Modified By: Azuroso
+# -----
+# Copyright (c) 2023 Azuroso
+# -----
+# HISTORY:
+# Date      	By	Comments
+# ----------	---	---------------------------------------------------------
+
 # Fix for relaying ipv6 in luci-proto-relay
 
 temp_save_folder="/tmp/tmp/ipv6_relay_subnets";
 
 #INTERFACE="wan6";
 #ACTION="iflink";
-METRIC_SETTING=1024;
+METRIC_SETTING=128;
 
 function print_log(){
     logger -t IPV6_Relay "$1";
-    echo "$1" >> /tmp/tmp/test_94-relay.log
+    echo "$1" >> ${temp_save_folder}/test_94-relay.log
 }
 
 
 print_log "IPV6_Relay:$(env)";
-
+if [[ ! -d "${temp_save_folder}" ]] ; then
+    mkdir -p ${temp_save_folder};
+fi
 
 function get_ipv6_subnet_string(){
     echo `ip -6 route show default | sed -n -e 's/default from //' -e 's/ via .*$//g' -e '/64$/p'`
@@ -24,7 +37,7 @@ function get_ipv6_subnet_string(){
 
 function clear_custom_routes(){
     if [ ! -f "${temp_save_folder}/subnets" ]; then
-        msg_str="Skipping routes deletion for ${INTERFACE} on event ${ACTION} due to failure in finding save subnets.";
+        msg_str="Skipping routes deletion for ${INTERFACE} on event ${ACTION} due to failure in finding saved subnets.";
         print_log "${msg_str}";
         return
     fi
@@ -56,7 +69,7 @@ function set_custom_routes(){
     subnet_array_strs=($(echo "${ipv6_subnet_str}" | tr ' ' '\n'));
     #print_log "${ipv6_subnet_str}.";
 
-    if [[ ! -d ${temp_save_folder} ]] ; then
+    if [[ ! -d "${temp_save_folder}" ]] ; then
         mkdir -p ${temp_save_folder};
     fi
 
@@ -88,7 +101,7 @@ if [[ "${INTERFACE}" == "wan6" ]] ; then
         clear_custom_routes;
 
         test_route_mask=`ubus call network.interface.wan6 status | jsonfilter -e '@["route"][0].mask'`;
-        if [ ${test_route_mask} -eq 64 ]; then
+        if [ "${test_route_mask}" -eq 64 ]; then
             set_custom_routes;
         else
             print_log "Have event ${ACTION} on ${INTERFACE} occurred, but no ipv6 subnets obtained.";
