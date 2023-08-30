@@ -13,8 +13,10 @@
 # Fix for relaying ipv6 in luci-proto-relay
 
 temp_save_folder="/tmp/tmp/ipv6_relay_subnets";
+subnets_save_path="${temp_save_folder}/subnets";
 
-#INTERFACE="wan6";
+
+INTERFACE=$1;
 #ACTION="iflink";
 METRIC_SETTING=128;
 
@@ -36,12 +38,12 @@ function get_ipv6_subnet_string(){
 
 
 function clear_custom_routes(){
-    if [ ! -f "${temp_save_folder}/subnets" ]; then
+    if [ ! -f ${subnets_save_path} ]; then
         msg_str="Skipping routes deletion for ${INTERFACE} on event ${ACTION} due to failure in finding saved subnets.";
         print_log "${msg_str}";
         return
     fi
-    ipv6_subnet_str=`cat "${temp_save_folder}/subnets"`;
+    ipv6_subnet_str=`cat "${subnets_save_path}"`;
     #print_log "${ipv6_subnet_str}.";
     subnet_array_strs=($(echo "${ipv6_subnet_str}" | tr ' ' '\n'));
 
@@ -59,7 +61,7 @@ function clear_custom_routes(){
         
     done
 
-    > "${temp_save_folder}/subnets";
+    > "${subnets_save_path}";
 }
 
 
@@ -75,10 +77,14 @@ function set_custom_routes(){
 
     for subnet_str in "${subnet_array_strs[@]}"
     do
-        #echo "$subnet_str"
+        if [ ${#subnet_str} -le 5 ] ; then
+            print_log "Skipping invalid subnet String: ${subnet_str}";
+            continue
+        fi
         return_str=`ip -6 route add ${subnet_str} dev br-lan metric ${METRIC_SETTING}`;
         if [ $? -eq 0 ] ; then
             msg_str="Route added for ${INTERFACE} on event ${ACTION} on subnet ${subnet_str}.";
+            
             print_log "${msg_str}";
         else
             msg_str="Route failed to add for ${INTERFACE} on event ${ACTION} on subnet ${subnet_str}. ${return_str}";
@@ -86,6 +92,7 @@ function set_custom_routes(){
         fi
         
     done
+    echo -n "${ipv6_subnet_str}" > "${subnets_save_path}";
 }
 
 
@@ -94,13 +101,13 @@ function set_custom_routes(){
 
 
 
-if [[ "${INTERFACE}" == "wan6" ]] ; then
+if [[ "${INTERFACE}" == "wan6" || 1 ]] ; then
 
     if [[ "${ACTION}" == "ifupdate" || "${ACTION}" == "iflink" || "${ACTION}" == "ifup" ]] ; then
 
         clear_custom_routes;
 
-        test_route_mask=`ubus call network.interface.wan6 status | jsonfilter -e '@["route"][0].mask'`;
+        test_route_mask=`ubus call network.interface.${INTERFACE} status | jsonfilter -e '@["route"][0].mask'`;
         if [ "${test_route_mask}" -eq 64 ]; then
             set_custom_routes;
         else
