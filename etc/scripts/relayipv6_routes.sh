@@ -17,6 +17,7 @@ subnets_save_path="${temp_save_folder}/subnets";
 
 
 INTERFACE=$1;
+ACTION=$2;
 #ACTION="iflink";
 METRIC_SETTING=128;
 

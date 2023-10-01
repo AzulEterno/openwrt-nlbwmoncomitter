@@ -23,6 +23,6 @@ fi
 
 if [[ "${INTERFACE}" == "wan6" ]] ; then
 
-    bash /etc/scripts/relayipv6_routes.sh "${INTERFACE}" 2>>${temp_save_folder}/test_94-relay.log
+    bash /etc/scripts/relayipv6_routes.sh "${INTERFACE}" "${ACTION}" 2>>${temp_save_folder}/test_94-relay.log
 
 fi
