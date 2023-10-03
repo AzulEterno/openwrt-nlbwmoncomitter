@@ -102,23 +102,21 @@ function set_custom_routes(){
 
 
 
-if [[ "${INTERFACE}" == "wan6" || 1 ]] ; then
+if [[ "${ACTION}" == "ifupdate" || "${ACTION}" == "iflink" || "${ACTION}" == "ifup" ]] ; then
 
-    if [[ "${ACTION}" == "ifupdate" || "${ACTION}" == "iflink" || "${ACTION}" == "ifup" ]] ; then
+    clear_custom_routes;
 
-        clear_custom_routes;
-
-        test_route_mask=`ubus call network.interface.${INTERFACE} status | jsonfilter -e '@["route"][0].mask'`;
-        if [ "${test_route_mask}" -eq 64 ]; then
-            set_custom_routes;
-        else
-            print_log "Have event ${ACTION} on ${INTERFACE} occurred, but no ipv6 subnets obtained.";
-        fi
-        
-
+    test_route_mask=`ubus call network.interface.${INTERFACE} status | jsonfilter -e '@["route"][0].mask'`;
+    if [ "${test_route_mask}" -eq 64 ]; then
+        set_custom_routes;
+    else
+        print_log "Have event ${ACTION} on ${INTERFACE} occurred, but no ipv6 subnets obtained.";
     fi
-    if [[ "${ACTION}" == "free" || "${ACTION}" == "ifdown" ]] ; then
-        clear_custom_routes;
-    fi
+    
+
 fi
+if [[ "${ACTION}" == "free" || "${ACTION}" == "ifdown" ]] ; then
+    clear_custom_routes;
+fi
+
 
