@@ -18,8 +18,8 @@ subnets_save_path="${temp_save_folder}/subnets";
 IS_DEBUGGING=0;
 INTERFACE=$1;
 ACTION=$2;
-#ACTION="iflink";
-METRIC_SETTING=255;
+
+METRIC_SETTING=128;
 
 ASSIGNED_MASK=64;
 
@@ -52,6 +52,12 @@ function get_ipv6_subnet_string(){
     echo -e "$formatted_output";
 }
 
+function select_system_routes(){
+    local ipv6_subnet_str=`get_ipv6_subnet_string`;
+    local output_string="${ipv6_subnet_str//\\n/|}"
+    echo `ip -6 route show | grep -E "(${output_string}) dev wan"`
+}
+
 
 
 function clear_custom_routes(){
@@ -68,7 +74,7 @@ function clear_custom_routes(){
     for subnet_str in "${subnet_array_strs[@]}"
     do
         if [ ${#subnet_str} -gt 5 ] ; then
-            return_str=`ip -6 route del ${subnet_str} dev br-lan metric ${METRIC_SETTING}`;
+            return_str=`ip -6 route del ${subnet_str} dev br-lan proto static metric ${METRIC_SETTING}`;
             if [ $? -eq 0 ] ; then
                 msg_str="Route deleted for ${INTERFACE} on event ${ACTION} on subnet ${subnet_str}.";
                 print_log "${msg_str}";
@@ -101,7 +107,7 @@ function set_custom_routes(){
             print_log "Skipping invalid subnet String: ${subnet_str}";
             continue
         fi
-        return_str=`ip -6 route add ${subnet_str} dev br-lan metric ${METRIC_SETTING}`;
+        return_str=`ip -6 route add ${subnet_str} dev br-lan proto static metric ${METRIC_SETTING}`;
         if [ $? -eq 0 ] ; then
             msg_str="Route added for ${INTERFACE} on event ${ACTION} on subnet ${subnet_str}.";
             
@@ -116,8 +122,11 @@ function set_custom_routes(){
 }
 
 assert_dir_exists;
+
 #INTERFACE="wan6";
 #ACTION="ifdown";
+
+
 if [ -z "$INTERFACE" ]; then
     print_log "\$Interface variable is empty.";
 fi
