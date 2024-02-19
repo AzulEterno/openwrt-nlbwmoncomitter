@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# File: toggle_switch_wanlan
+# Relative Path: \
+# File Created: Sunday, 18th February 2024 19:48:33
+# Author: Azuroso
+# -----
+# Last Modified: Sunday, 18th February 2024 19:49:57
+# -----
+# Copyright 2024 Azuroso
+
+
+# Switch wan and lan port for Glinet-MT3K
+
+#Test Command
+# BUTTON="BTN_0" ACTION="pressed" bash /etc/hotplug.d/button/toggle_switch_wanlan
+
+OFFSTATE_LAN_PORT="eth1"   # 1G port
+OFFSTATE_WAN_PORT="eth0"   # 2.5G port
+
+ONSTATE_LAN_PORT="eth0"    # 2.5G port
+ONSTATE_WAN_PORT="eth1"    # 1G port
+
+function get_brlan_config_id(){
+    local value_expr=`uci show network | grep -oE "\.([^\s]+)\.name='br\-lan'" | sed -e "s/.*\.\([^\s]*\)\.name=.*/\1/"`
+
+    echo -n "${value_expr}"
+}
+
+function get_wan_config_id(){
+    echo -n "wan";
+}
+
+WAN_INF_Id=`get_wan_config_id`;
+LAN_INF_Id=`get_brlan_config_id`;
+
+#echo "${BUTTON},${ACTION}";
+
+if [ -z ${BUTTON} ];then
+    exit 1;
+elif [ -z ${ACTION} ];then
+    exit 2;
+fi
+
+ConfigAltered=0;
+
+if [ ${BUTTON} == "BTN_0" ];then
+    CURRENT_WAN_Device=`uci get network.wan.device`;
+    
+
+    if [ ${ACTION} == "pressed" ];then
+        if [ "${CURRENT_WAN_Device}" != "${ONSTATE_WAN_PORT}" ];then 
+            uci set network.${WAN_INF_Id}.device="${ONSTATE_WAN_PORT}";
+            logger -t "Button_Port_Switcher" "Setting wan interface with port ${ONSTATE_WAN_PORT}";
+            ConfigAltered=1;
+        else
+            logger -t "Button_Port_Switcher" "Wan interface checked.";
+        fi
+
+        LAN_BR_INF_dev_str=`uci get network.${LAN_INF_Id}.ports`;
+
+        if [[ "${LAN_BR_INF_dev_str}" =~ "\b${ONSTATE_WAN_PORT}\b" ]]; then
+            uci del_list network.${LAN_INF_Id}.ports="${ONSTATE_WAN_PORT}"
+            logger -t "Button_Port_Switcher" "${ONSTATE_WAN_PORT} removed from br-lan."
+            ConfigAltered=1;
+        else
+            logger -t "Button_Port_Switcher" "No ${ONSTATE_WAN_PORT} in br-lan checked."
+        fi
+        
+        if [[ "${LAN_BR_INF_dev_str}" =~ "\b${ONSTATE_LAN_PORT}\b" ]]; then
+            logger -t "Button_Port_Switcher" "${ONSTATE_LAN_PORT} in br-lan checked."
+        else
+            uci add_list network.${LAN_INF_Id}.ports="${ONSTATE_LAN_PORT}"
+            logger -t "Button_Port_Switcher" "Setting ${ONSTATE_LAN_PORT} in br-lan."
+            ConfigAltered=1;
+        fi
+
+        if [[ ${ConfigAltered} != 0 ]];then
+            uci commit;
+            #/etc/init.d/network restart;
+            logger -t "Button_Port_Switcher" "Committing settings and restarting network."
+        fi
+
+
+
+    elif [ ${ACTION} == "released" ];then
+        if [ "${CURRENT_WAN_Device}" != "${OFFSTATE_WAN_PORT}" ];then 
+            uci set network.${WAN_INF_Id}.device="${OFFSTATE_WAN_PORT}";
+            logger -t "Button_Port_Switcher" "Setting wan interface with port ${OFFSTATE_WAN_PORT}";
+            ConfigAltered=1;
+        else
+            logger -t "Button_Port_Switcher" "Wan interface checked.";
+        fi
+
+        LAN_BR_INF_dev_str=`uci get network.${LAN_INF_Id}.ports`;
+
+        if [[ "${LAN_BR_INF_dev_str}" =~ "\b${OFFSTATE_WAN_PORT}\b" ]]; then
+            uci del_list network.${LAN_INF_Id}.ports="${OFFSTATE_WAN_PORT}"
+            logger -t "Button_Port_Switcher" "${OFFSTATE_WAN_PORT} removed from br-lan."
+            ConfigAltered=1;
+        else
+            logger -t "Button_Port_Switcher" "No ${OFFSTATE_WAN_PORT} in br-lan checked."
+        fi
+        
+        if [[ "${LAN_BR_INF_dev_str}" =~ "\b${OFFSTATE_LAN_PORT}\b" ]]; then
+            logger -t "Button_Port_Switcher" "${OFFSTATE_LAN_PORT} in br-lan checked."
+        else
+            uci add_list network.${LAN_INF_Id}.ports="${OFFSTATE_LAN_PORT}"
+            logger -t "Button_Port_Switcher" "Setting ${OFFSTATE_LAN_PORT} in br-lan."
+            ConfigAltered=1;
+        fi
+
+        if [[ ${ConfigAltered} != 0 ]];then
+            uci commit;
+            #/etc/init.d/network restart;
+            logger -t "Button_Port_Switcher" "Committing settings and restarting network."
+        fi
+
+    fi
+fi
+exit 0;
