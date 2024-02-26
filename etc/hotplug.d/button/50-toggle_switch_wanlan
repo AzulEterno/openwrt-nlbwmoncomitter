@@ -115,7 +115,8 @@ if [ ${BUTTON} == "BTN_0" ];then
             #/etc/init.d/network restart;
             logger -t "Button_Port_Switcher" "Committing settings and restarting network."
         fi
-
+    else
+        logger -t "Button_Port_Switcher" "Unexpected Switch Action: ${ACTION}."
     fi
 fi
 exit 0;
