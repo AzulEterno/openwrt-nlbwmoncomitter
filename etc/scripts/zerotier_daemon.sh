@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # File: zerotier_daemon.sh
 # Relative Path: \
@@ -41,3 +41,5 @@ if [[ "${ztStatusCode}" != 200 ]]; then
         logger -t ZT-NW-Daemon "Non-connected zerotier status-code ${ztStatusCode} without network available, waiting for network.";
     fi
 fi
+
+exit 0;
