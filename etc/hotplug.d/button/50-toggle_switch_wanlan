@@ -77,7 +77,7 @@ if [ ${BUTTON} == "BTN_0" ];then
 
         if [[ ${ConfigAltered} != 0 ]];then
             uci commit;
-            #/etc/init.d/network restart;
+            /etc/init.d/network restart;
             logger -t "Button_Port_Switcher" "Committing settings and restarting network."
         fi
 
