@@ -1,0 +1,54 @@
+#!/bin/sh /etc/rc.common
+
+# OpenWrt init.d script to backup/restore the collectd RRD database, to have it persist across (planned) reboots
+# https://github.com/AzulEterno/openwrt-nlbwmoncomitter
+
+# This is free and unencumbered software released into the public domain.
+
+START=98
+STOP=1
+
+
+TMP_PEERS_DIR="/tmp/etc/zerotier/peers.d"
+TMP_NETWORKS_DIR="/tmp/etc/zerotier/networks.d"
+
+create_folder_link(){
+    ln -s "$1" "$2"
+}
+
+create_target_folder(){
+    mkdir -p "${TMP_PEERS_DIR}"
+    mkdir -p "${TMP_NETWORKS_DIR}"
+
+}
+
+
+check_existed_folder(){
+    local zerotier_config_path="/etc/config/zero"
+    local peers_dir="${zerotier_config_path}/peers.d"
+    local networks_dir="${zerotier_config_path}/networks.d"
+
+    if [[ -e "${peers_dir}" && ! -L "${peers_dir}" ]]; then
+        rm -rf "${peers_dir}";
+        create_folder_link "${TMP_PEERS_DIR}" "${peers_dir}";
+    fi
+
+    if [[ -e "${networks_dir}" && ! -L "${networks_dir}" ]]; then
+        rm -rf "${networks_dir}";
+        create_folder_link "${TMP_NETWORKS_DIR}" "${networks_dir}";
+    fi
+
+}
+
+
+
+
+start() {
+	create_target_folder;
+    check_existed_folder;
+}
+
+stop() {
+	exit 0
+}
+
