@@ -1,0 +1,4 @@
+#!/bin/bash
+if [ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "wan" ]; then
+    /etc/scripts/set_upnp_public_ip.sh
+fi
